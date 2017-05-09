@@ -60,7 +60,6 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/prober"
 	proberesults "k8s.io/kubernetes/pkg/kubelet/prober/results"
 	"k8s.io/kubernetes/pkg/kubelet/remote"
-	"k8s.io/kubernetes/pkg/kubelet/rkt"
 	"k8s.io/kubernetes/pkg/kubelet/server"
 	"k8s.io/kubernetes/pkg/kubelet/server/stats"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
@@ -645,37 +644,6 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 				kubeCfg.SeccompProfileRoot,
 				kubeDeps.ContainerRuntimeOptions...,
 			)
-			klet.containerRuntime = runtime
-			klet.runner = kubecontainer.DirectStreamingRunner(runtime)
-		case "rkt":
-			// TODO: Include hairpin mode settings in rkt?
-			conf := &rkt.Config{
-				Path:            kubeCfg.RktPath,
-				Stage1Image:     kubeCfg.RktStage1Image,
-				InsecureOptions: "image,ondisk",
-			}
-			runtime, err := rkt.New(
-				kubeCfg.RktAPIEndpoint,
-				conf,
-				klet,
-				kubeDeps.Recorder,
-				containerRefManager,
-				klet.podManager,
-				klet.livenessManager,
-				klet.httpClient,
-				klet.networkPlugin,
-				klet.hairpinMode == componentconfig.HairpinVeth,
-				utilexec.New(),
-				kubecontainer.RealOS{},
-				imageBackOff,
-				kubeCfg.SerializeImagePulls,
-				float32(kubeCfg.RegistryPullQPS),
-				int(kubeCfg.RegistryBurst),
-				kubeCfg.RuntimeRequestTimeout.Duration,
-			)
-			if err != nil {
-				return nil, err
-			}
 			klet.containerRuntime = runtime
 			klet.runner = kubecontainer.DirectStreamingRunner(runtime)
 		default:

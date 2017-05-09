@@ -22,7 +22,7 @@ import (
 	"strconv"
 
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/cloudprovider/providers/aws"
+	//"k8s.io/kubernetes/pkg/cloudprovider/providers/aws"
 	"k8s.io/kubernetes/pkg/util/sets"
 	"k8s.io/kubernetes/plugin/pkg/scheduler"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
@@ -118,6 +118,7 @@ func defaultPredicates() sets.String {
 			},
 		),
 		// Fit is determined by whether or not there would be too many AWS EBS volumes attached to the node
+		/**
 		factory.RegisterFitPredicateFactory(
 			"MaxEBSVolumeCount",
 			func(args factory.PluginFactoryArgs) algorithm.FitPredicate {
@@ -126,6 +127,7 @@ func defaultPredicates() sets.String {
 				return predicates.NewMaxPDVolumeCountPredicate(predicates.EBSVolumeFilter, maxVols, args.PVInfo, args.PVCInfo)
 			},
 		),
+		*/
 		// Fit is determined by whether or not there would be too many GCE PD volumes attached to the node
 		factory.RegisterFitPredicateFactory(
 			"MaxGCEPDVolumeCount",

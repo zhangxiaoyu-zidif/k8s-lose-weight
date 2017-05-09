@@ -59,7 +59,7 @@ import (
 	client "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
 	clientcmdapi "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
-	gcecloud "k8s.io/kubernetes/pkg/cloudprovider/providers/gce"
+	//gcecloud "k8s.io/kubernetes/pkg/cloudprovider/providers/gce"
 	"k8s.io/kubernetes/pkg/controller"
 	deploymentutil "k8s.io/kubernetes/pkg/controller/deployment/util"
 	"k8s.io/kubernetes/pkg/fields"
@@ -4331,38 +4331,12 @@ func getPodLogsInternal(c clientset.Interface, namespace, podName, containerName
 // are actually cleaned up.  Currently only implemented for GCE/GKE.
 func EnsureLoadBalancerResourcesDeleted(ip, portRange string) error {
 	if TestContext.Provider == "gce" || TestContext.Provider == "gke" {
-		return ensureGCELoadBalancerResourcesDeleted(ip, portRange)
+		//return ensureGCELoadBalancerResourcesDeleted(ip, portRange)
 	}
 	return nil
 }
 
-func ensureGCELoadBalancerResourcesDeleted(ip, portRange string) error {
-	gceCloud, ok := TestContext.CloudConfig.Provider.(*gcecloud.GCECloud)
-	if !ok {
-		return fmt.Errorf("failed to convert CloudConfig.Provider to GCECloud: %#v", TestContext.CloudConfig.Provider)
-	}
-	project := TestContext.CloudConfig.ProjectID
-	region, err := gcecloud.GetGCERegion(TestContext.CloudConfig.Zone)
-	if err != nil {
-		return fmt.Errorf("could not get region for zone %q: %v", TestContext.CloudConfig.Zone, err)
-	}
 
-	return wait.Poll(10*time.Second, 5*time.Minute, func() (bool, error) {
-		service := gceCloud.GetComputeService()
-		list, err := service.ForwardingRules.List(project, region).Do()
-		if err != nil {
-			return false, err
-		}
-		for ix := range list.Items {
-			item := list.Items[ix]
-			if item.PortRange == portRange && item.IPAddress == ip {
-				Logf("found a load balancer: %v", item)
-				return false, nil
-			}
-		}
-		return true, nil
-	})
-}
 
 // The following helper functions can block/unblock network from source
 // host to destination host by manipulating iptable rules.
@@ -4832,18 +4806,6 @@ func (p *E2ETestNodePreparer) CleanupNodes() error {
 	return encounteredError
 }
 
-func CleanupGCEResources(loadBalancerName string) (err error) {
-	gceCloud, ok := TestContext.CloudConfig.Provider.(*gcecloud.GCECloud)
-	if !ok {
-		return fmt.Errorf("failed to convert CloudConfig.Provider to GCECloud: %#v", TestContext.CloudConfig.Provider)
-	}
-	gceCloud.DeleteFirewall(loadBalancerName)
-	gceCloud.DeleteForwardingRule(loadBalancerName)
-	gceCloud.DeleteGlobalStaticIP(loadBalancerName)
-	hc, _ := gceCloud.GetHttpHealthCheck(loadBalancerName)
-	gceCloud.DeleteTargetPool(loadBalancerName, hc)
-	return nil
-}
 
 // getMaster populates the externalIP, internalIP and hostname fields of the master.
 // If any of these is unavailable, it is set to "".

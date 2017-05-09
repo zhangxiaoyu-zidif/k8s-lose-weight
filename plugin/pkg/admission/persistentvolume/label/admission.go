@@ -17,7 +17,7 @@ limitations under the License.
 package label
 
 import (
-	"fmt"
+	//"fmt"
 	"io"
 	"sync"
 
@@ -25,11 +25,11 @@ import (
 
 	"k8s.io/kubernetes/pkg/admission"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/unversioned"
-	"k8s.io/kubernetes/pkg/cloudprovider"
-	"k8s.io/kubernetes/pkg/cloudprovider/providers/aws"
-	"k8s.io/kubernetes/pkg/cloudprovider/providers/gce"
-	vol "k8s.io/kubernetes/pkg/volume"
+	//"k8s.io/kubernetes/pkg/api/unversioned"
+	//"k8s.io/kubernetes/pkg/cloudprovider"
+	//"k8s.io/kubernetes/pkg/cloudprovider/providers/aws"
+	//"k8s.io/kubernetes/pkg/cloudprovider/providers/gce"
+	//vol "k8s.io/kubernetes/pkg/volume"
 )
 
 func init() {
@@ -45,8 +45,8 @@ type persistentVolumeLabel struct {
 	*admission.Handler
 
 	mutex            sync.Mutex
-	ebsVolumes       aws.Volumes
-	gceCloudProvider *gce.GCECloud
+	//ebsVolumes       aws.Volumes
+	//gceCloudProvider *gce.GCECloud
 }
 
 // NewPersistentVolumeLabel returns an admission.Interface implementation which adds labels to PersistentVolume CREATE requests,
@@ -73,6 +73,7 @@ func (l *persistentVolumeLabel) Admit(a admission.Attributes) (err error) {
 	}
 
 	var volumeLabels map[string]string
+	/**
 	if volume.Spec.AWSElasticBlockStore != nil {
 		labels, err := l.findAWSEBSLabels(volume)
 		if err != nil {
@@ -87,6 +88,7 @@ func (l *persistentVolumeLabel) Admit(a admission.Attributes) (err error) {
 		}
 		volumeLabels = labels
 	}
+	*/
 
 	if len(volumeLabels) != 0 {
 		if volume.Labels == nil {
@@ -102,7 +104,7 @@ func (l *persistentVolumeLabel) Admit(a admission.Attributes) (err error) {
 
 	return nil
 }
-
+/**
 func (l *persistentVolumeLabel) findAWSEBSLabels(volume *api.PersistentVolume) (map[string]string, error) {
 	// Ignore any volumes that are being provisioned
 	if volume.Spec.AWSElasticBlockStore.VolumeID == vol.ProvisionedVolumeName {
@@ -191,3 +193,4 @@ func (l *persistentVolumeLabel) getGCECloudProvider() (*gce.GCECloud, error) {
 	}
 	return l.gceCloudProvider, nil
 }
+*/
