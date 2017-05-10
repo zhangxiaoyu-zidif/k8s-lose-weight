@@ -22,7 +22,7 @@ package app
 
 import (
 	"fmt"
-	"io/ioutil"
+	//"io/ioutil"
 	"math/rand"
 	"net"
 	"net/http"
@@ -35,7 +35,7 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/apimachinery/registered"
-	"k8s.io/kubernetes/pkg/apis/batch"
+	//"k8s.io/kubernetes/pkg/apis/batch"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
 	"k8s.io/kubernetes/pkg/client/leaderelection"
@@ -46,35 +46,35 @@ import (
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
-	certcontroller "k8s.io/kubernetes/pkg/controller/certificates"
-	"k8s.io/kubernetes/pkg/controller/cronjob"
+	//certcontroller "k8s.io/kubernetes/pkg/controller/certificates"
+	//"k8s.io/kubernetes/pkg/controller/cronjob"
 	"k8s.io/kubernetes/pkg/controller/daemon"
-	"k8s.io/kubernetes/pkg/controller/deployment"
-	"k8s.io/kubernetes/pkg/controller/disruption"
+	//"k8s.io/kubernetes/pkg/controller/deployment"
+	//"k8s.io/kubernetes/pkg/controller/disruption"
 	endpointcontroller "k8s.io/kubernetes/pkg/controller/endpoint"
 	"k8s.io/kubernetes/pkg/controller/garbagecollector"
 	"k8s.io/kubernetes/pkg/controller/garbagecollector/metaonly"
 	"k8s.io/kubernetes/pkg/controller/informers"
-	"k8s.io/kubernetes/pkg/controller/job"
+	//"k8s.io/kubernetes/pkg/controller/job"
 	namespacecontroller "k8s.io/kubernetes/pkg/controller/namespace"
 	nodecontroller "k8s.io/kubernetes/pkg/controller/node"
-	petset "k8s.io/kubernetes/pkg/controller/petset"
-	"k8s.io/kubernetes/pkg/controller/podautoscaler"
-	"k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
+	//petset "k8s.io/kubernetes/pkg/controller/petset"
+	//"k8s.io/kubernetes/pkg/controller/podautoscaler"
+	//"k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 	"k8s.io/kubernetes/pkg/controller/podgc"
-	replicaset "k8s.io/kubernetes/pkg/controller/replicaset"
+	//replicaset "k8s.io/kubernetes/pkg/controller/replicaset"
 	replicationcontroller "k8s.io/kubernetes/pkg/controller/replication"
-	resourcequotacontroller "k8s.io/kubernetes/pkg/controller/resourcequota"
-	routecontroller "k8s.io/kubernetes/pkg/controller/route"
+	//resourcequotacontroller "k8s.io/kubernetes/pkg/controller/resourcequota"
+	//routecontroller "k8s.io/kubernetes/pkg/controller/route"
 	servicecontroller "k8s.io/kubernetes/pkg/controller/service"
-	serviceaccountcontroller "k8s.io/kubernetes/pkg/controller/serviceaccount"
+	//serviceaccountcontroller "k8s.io/kubernetes/pkg/controller/serviceaccount"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach"
-	persistentvolumecontroller "k8s.io/kubernetes/pkg/controller/volume/persistentvolume"
+	//persistentvolumecontroller "k8s.io/kubernetes/pkg/controller/volume/persistentvolume"
 	"k8s.io/kubernetes/pkg/healthz"
-	quotainstall "k8s.io/kubernetes/pkg/quota/install"
+	//quotainstall "k8s.io/kubernetes/pkg/quota/install"
 	"k8s.io/kubernetes/pkg/runtime/serializer"
-	"k8s.io/kubernetes/pkg/serviceaccount"
-	certutil "k8s.io/kubernetes/pkg/util/cert"
+	//"k8s.io/kubernetes/pkg/serviceaccount"
+	//certutil "k8s.io/kubernetes/pkg/util/cert"
 	"k8s.io/kubernetes/pkg/util/configz"
 	"k8s.io/kubernetes/pkg/util/wait"
 
@@ -226,7 +226,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 	}
 	discoveryClient := client("controller-discovery").Discovery()
 	sharedInformers := informers.NewSharedInformerFactory(client("shared-informers"), ResyncPeriod(s)())
-
+/*
 	// always start the SA token controller first using a full-power client, since it needs to mint tokens for the rest
 	if len(s.ServiceAccountKeyFile) > 0 {
 		privateKey, err := serviceaccount.ReadPrivateKey(s.ServiceAccountKeyFile)
@@ -256,7 +256,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 		}
 	}
-
+*/
 	go endpointcontroller.NewEndpointController(sharedInformers.Pods().Informer(), client("endpoint-controller")).
 		Run(int(s.ConcurrentEndpointSyncs), wait.NeverStop)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
@@ -307,7 +307,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 		serviceController.Run(int(s.ConcurrentServiceSyncs))
 	}
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
-
+/*
 	if s.AllocateNodeCIDRs && s.ConfigureCloudRoutes {
 		if cloud == nil {
 			glog.Warning("configure-cloud-routes is set, but no cloud provider specified. Will not configure cloud provider routes.")
@@ -342,7 +342,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 	}
 	go resourcequotacontroller.NewResourceQuotaController(resourceQuotaControllerOptions).Run(int(s.ConcurrentResourceQuotaSyncs), wait.NeverStop)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
-
+*/
 	// If apiserver is not running we should wait for some time and fail only then. This is particularly
 	// important when we start apiserver and controller manager at the same time.
 	var versionStrings []string
@@ -408,7 +408,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 				Run(int(s.ConcurrentDaemonSetSyncs), wait.NeverStop)
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 		}
-
+/*
 		if containsResource(resources, "jobs") {
 			glog.Infof("Starting job controller")
 			go job.NewJobController(sharedInformers.Pods().Informer(), sharedInformers.Jobs(), client("job-controller")).
@@ -429,8 +429,9 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 				Run(int(s.ConcurrentRSSyncs), wait.NeverStop)
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 		}
+*/
 	}
-
+/*
 	groupVersion = "autoscaling/v1"
 	resources, found = resourceMap[groupVersion]
 	glog.Infof("Attempting to start horizontal pod autoscaler controller, full resource map %+v", resourceMap)
@@ -515,7 +516,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 	volumeController := persistentvolumecontroller.NewController(params)
 	volumeController.Run(wait.NeverStop)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
-
+*/
 	if s.ReconcilerSyncLoopPeriod.Duration < time.Second {
 		return fmt.Errorf("Duration time must be greater than one second as set via command line option reconcile-sync-loop-period.")
 	}
@@ -538,7 +539,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 	}
 	go attachDetachController.Run(wait.NeverStop)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
-
+/*
 	groupVersion = "certificates.k8s.io/v1alpha1"
 	resources, found = resourceMap[groupVersion]
 	glog.Infof("Attempting to start certificates, full resource map %+v", resourceMap)
@@ -569,7 +570,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 		serviceaccountcontroller.DefaultServiceAccountsControllerOptions(),
 	).Run(1, stop)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
-
+*/
 	if s.EnableGarbageCollector {
 		gcClientset := client("generic-garbage-collector")
 		groupVersionResources, err := gcClientset.Discovery().ServerPreferredResources()
