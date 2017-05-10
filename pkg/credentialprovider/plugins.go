@@ -17,13 +17,11 @@ limitations under the License.
 package credentialprovider
 
 import (
-	"sync"
 
-	"github.com/golang/glog"
+
 )
 
 // All registered credential providers.
-var providersMutex sync.Mutex
 var providers = make(map[string]DockerConfigProvider)
 
 // RegisterCredentialProvider is called by provider implementations on
@@ -32,14 +30,7 @@ var providers = make(map[string]DockerConfigProvider)
 //    	RegisterCredentialProvider("name", &myProvider{...})
 //   }
 func RegisterCredentialProvider(name string, provider DockerConfigProvider) {
-	providersMutex.Lock()
-	defer providersMutex.Unlock()
-	_, found := providers[name]
-	if found {
-		glog.Fatalf("Credential provider %q was registered twice", name)
-	}
-	glog.V(4).Infof("Registered credential provider %q", name)
-	providers[name] = provider
+
 }
 
 // NewDockerKeyring creates a DockerKeyring to use for resolving credentials,
@@ -49,14 +40,6 @@ func NewDockerKeyring() DockerKeyring {
 		Providers: make([]DockerConfigProvider, 0),
 	}
 
-	// TODO(mattmoor): iterating over the map is non-deterministic.  We should
-	// introduce the notion of priorities for conflict resolution.
-	for name, provider := range providers {
-		if provider.Enabled() {
-			glog.V(4).Infof("Registering credential provider: %v", name)
-			keyring.Providers = append(keyring.Providers, provider)
-		}
-	}
 
 	return keyring
 }
