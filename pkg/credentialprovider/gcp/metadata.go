@@ -17,15 +17,15 @@ limitations under the License.
 package gcp_credentials
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	//"encoding/json"
+	//"io/ioutil"
 	"net/http"
-	"strings"
-	"time"
+	//"strings"
+	//"time"
 
-	"github.com/golang/glog"
+	//"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/credentialprovider"
-	utilnet "k8s.io/kubernetes/pkg/util/net"
+	//utilnet "k8s.io/kubernetes/pkg/util/net"
 )
 
 const (
@@ -83,45 +83,13 @@ type containerRegistryProvider struct {
 // init registers the various means by which credentials may
 // be resolved on GCP.
 func init() {
-	tr := utilnet.SetTransportDefaults(&http.Transport{})
-	metadataHTTPClientTimeout := time.Second * 10
-	httpClient := &http.Client{
-		Transport: tr,
-		Timeout:   metadataHTTPClientTimeout,
-	}
-	credentialprovider.RegisterCredentialProvider("google-dockercfg",
-		&credentialprovider.CachingDockerConfigProvider{
-			Provider: &dockerConfigKeyProvider{
-				metadataProvider{Client: httpClient},
-			},
-			Lifetime: 60 * time.Second,
-		})
 
-	credentialprovider.RegisterCredentialProvider("google-dockercfg-url",
-		&credentialprovider.CachingDockerConfigProvider{
-			Provider: &dockerConfigUrlKeyProvider{
-				metadataProvider{Client: httpClient},
-			},
-			Lifetime: 60 * time.Second,
-		})
-
-	credentialprovider.RegisterCredentialProvider("google-container-registry",
-		// Never cache this.  The access token is already
-		// cached by the metadata service.
-		&containerRegistryProvider{
-			metadataProvider{Client: httpClient},
-		})
 }
 
 // Returns true if it finds a local GCE VM.
 // Looks at a product file that is an undocumented API.
 func onGCEVM() bool {
-	data, err := ioutil.ReadFile(gceProductNameFile)
-	if err != nil {
-		glog.V(2).Infof("Error while reading product_name: %v", err)
 		return false
-	}
-	return strings.Contains(string(data), googleProductName)
 }
 
 // Enabled implements DockerConfigProvider for all of the Google implementations.
@@ -136,13 +104,6 @@ func (g *dockerConfigKeyProvider) LazyProvide() *credentialprovider.DockerConfig
 
 // Provide implements DockerConfigProvider
 func (g *dockerConfigKeyProvider) Provide() credentialprovider.DockerConfig {
-	// Read the contents of the google-dockercfg metadata key and
-	// parse them as an alternate .dockercfg
-	if cfg, err := credentialprovider.ReadDockerConfigFileFromUrl(dockerConfigKey, g.Client, metadataHeader); err != nil {
-		glog.Errorf("while reading 'google-dockercfg' metadata: %v", err)
-	} else {
-		return cfg
-	}
 
 	return credentialprovider.DockerConfig{}
 }
@@ -154,42 +115,9 @@ func (g *dockerConfigUrlKeyProvider) LazyProvide() *credentialprovider.DockerCon
 
 // Provide implements DockerConfigProvider
 func (g *dockerConfigUrlKeyProvider) Provide() credentialprovider.DockerConfig {
-	// Read the contents of the google-dockercfg-url key and load a .dockercfg from there
-	if url, err := credentialprovider.ReadUrl(dockerConfigUrlKey, g.Client, metadataHeader); err != nil {
-		glog.Errorf("while reading 'google-dockercfg-url' metadata: %v", err)
-	} else {
-		if strings.HasPrefix(string(url), "http") {
-			if cfg, err := credentialprovider.ReadDockerConfigFileFromUrl(string(url), g.Client, nil); err != nil {
-				glog.Errorf("while reading 'google-dockercfg-url'-specified url: %s, %v", string(url), err)
-			} else {
-				return cfg
-			}
-		} else {
-			// TODO(mattmoor): support reading alternate scheme URLs (e.g. gs:// or s3://)
-			glog.Errorf("Unsupported URL scheme: %s", string(url))
-		}
-	}
-
 	return credentialprovider.DockerConfig{}
 }
 
-// runcWithBackoff runs input function `f` with an exponential backoff.
-// Note that this method can block indefinitely.
-func runWithBackoff(f func() ([]byte, error)) []byte {
-	var backoff = 100 * time.Millisecond
-	const maxBackoff = time.Minute
-	for {
-		value, err := f()
-		if err == nil {
-			return value
-		}
-		time.Sleep(backoff)
-		backoff = backoff * 2
-		if backoff > maxBackoff {
-			backoff = maxBackoff
-		}
-	}
-}
 
 // Enabled implements a special metadata-based check, which verifies the
 // storage scope is available on the GCE VM.
@@ -202,52 +130,7 @@ func runWithBackoff(f func() ([]byte, error)) []byte {
 // and "http://metadata.google.internal./computeMetadata/v1/instance/service-accounts/default/scopes" will also return `200`.
 // More information on metadata service can be found here - https://cloud.google.com/compute/docs/storing-retrieving-metadata
 func (g *containerRegistryProvider) Enabled() bool {
-	if !onGCEVM() {
-		return false
-	}
-	// Given that we are on GCE, we should keep retrying until the metadata server responds.
-	value := runWithBackoff(func() ([]byte, error) {
-		value, err := credentialprovider.ReadUrl(serviceAccounts, g.Client, metadataHeader)
-		if err != nil {
-			glog.V(2).Infof("Failed to Get service accounts from gce metadata server: %v", err)
-		}
-		return value, err
-	})
-	// We expect the service account to return a list of account directories separated by newlines, e.g.,
-	//   sv-account-name1/
-	//   sv-account-name2/
-	// ref: https://cloud.google.com/compute/docs/storing-retrieving-metadata
-	defaultServiceAccountExists := false
-	for _, sa := range strings.Split(string(value), "\n") {
-		if strings.TrimSpace(sa) == defaultServiceAccount {
-			defaultServiceAccountExists = true
-			break
-		}
-	}
-	if !defaultServiceAccountExists {
-		glog.V(2).Infof("'default' service account does not exist. Found following service accounts: %q", string(value))
-		return false
-	}
-	url := metadataScopes + "?alt=json"
-	value = runWithBackoff(func() ([]byte, error) {
-		value, err := credentialprovider.ReadUrl(url, g.Client, metadataHeader)
-		if err != nil {
-			glog.V(2).Infof("Failed to Get scopes in default service account from gce metadata server: %v", err)
-		}
-		return value, err
-	})
-	var scopes []string
-	if err := json.Unmarshal(value, &scopes); err != nil {
-		glog.Errorf("Failed to unmarshal scopes: %v", err)
-		return false
-	}
-	for _, v := range scopes {
-		// cloudPlatformScope implies storage scope.
-		if strings.HasPrefix(v, storageScopePrefix) || strings.HasPrefix(v, cloudPlatformScopePrefix) {
-			return true
-		}
-	}
-	glog.Warningf("Google container registry is disabled, no storage scope is available: %s", value)
+
 	return false
 }
 
@@ -265,34 +148,5 @@ func (g *containerRegistryProvider) LazyProvide() *credentialprovider.DockerConf
 // Provide implements DockerConfigProvider
 func (g *containerRegistryProvider) Provide() credentialprovider.DockerConfig {
 	cfg := credentialprovider.DockerConfig{}
-
-	tokenJsonBlob, err := credentialprovider.ReadUrl(metadataToken, g.Client, metadataHeader)
-	if err != nil {
-		glog.Errorf("while reading access token endpoint: %v", err)
-		return cfg
-	}
-
-	email, err := credentialprovider.ReadUrl(metadataEmail, g.Client, metadataHeader)
-	if err != nil {
-		glog.Errorf("while reading email endpoint: %v", err)
-		return cfg
-	}
-
-	var parsedBlob tokenBlob
-	if err := json.Unmarshal([]byte(tokenJsonBlob), &parsedBlob); err != nil {
-		glog.Errorf("while parsing json blob %s: %v", tokenJsonBlob, err)
-		return cfg
-	}
-
-	entry := credentialprovider.DockerConfigEntry{
-		Username: "_token",
-		Password: parsedBlob.AccessToken,
-		Email:    string(email),
-	}
-
-	// Add our entry for each of the supported container registry URLs
-	for _, k := range containerRegistryUrls {
-		cfg[k] = entry
-	}
 	return cfg
 }
