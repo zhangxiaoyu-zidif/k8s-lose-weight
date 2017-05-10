@@ -52,7 +52,7 @@ import (
 	"k8s.io/kubernetes/pkg/volume/secret"
 	//"k8s.io/kubernetes/pkg/volume/vsphere_volume"
 	// Cloud providers
-	_ "k8s.io/kubernetes/pkg/cloudprovider/providers"
+	//cloudprovider_prune _ "k8s.io/kubernetes/pkg/cloudprovider/providers"
 )
 
 // ProbeVolumePlugins collects all volume plugins into an easy to use list.
