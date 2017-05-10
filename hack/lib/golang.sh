@@ -610,7 +610,7 @@ kube::golang::build_binaries() {
     # Use eval to preserve embedded quoted strings.
     local goflags goldflags gogcflags
     eval "goflags=(${KUBE_GOFLAGS:-})"
-    goldflags="${KUBE_GOLDFLAGS:-} $(kube::version::ldflags)"
+    goldflags="${KUBE_GOLDFLAGS:-} $(kube::version::ldflags) -w"
     gogcflags="${KUBE_GOGCFLAGS:-}"
 
     local use_go_build
